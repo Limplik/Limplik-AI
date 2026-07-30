@@ -12,34 +12,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-
-      - name: Setup Android SDK
+      - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y wget unzip
+          sudo apt install -y openjdk-17-jdk unzip wget
 
+      - name: Install Android SDK
+        run: |
           mkdir -p $HOME/android-sdk/cmdline-tools
 
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O tools.zip
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O sdk.zip
 
-          unzip -q tools.zip -d $HOME/android-sdk/cmdline-tools
+          unzip -q sdk.zip -d $HOME/android-sdk/cmdline-tools
 
-          mkdir -p $HOME/android-sdk/cmdline-tools/latest
-
-          mv $HOME/android-sdk/cmdline-tools/cmdline-tools/* $HOME/android-sdk/cmdline-tools/latest/
-
-          export ANDROID_HOME=$HOME/android-sdk
-          export PATH=$PATH:$HOME/android-sdk/cmdline-tools/latest/bin
+          mv $HOME/android-sdk/cmdline-tools/cmdline-tools $HOME/android-sdk/cmdline-tools/latest
 
           echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
           echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
 
-          ls $HOME/android-sdk/cmdline-tools/latest/bin
+          export ANDROID_HOME=$HOME/android-sdk
+          export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
 
           yes | sdkmanager --licenses
 
@@ -53,6 +45,15 @@ jobs:
           pip install --upgrade pip
           pip install buildozer cython==0.29.36
 
+      - name: Configure Buildozer
+        run: |
+          buildozer init || true
+
+          sed -i 's/# (android.api) = 27/android.api = 34/' buildozer.spec
+          sed -i 's/# (android.minapi) = 21/android.minapi = 23/' buildozer.spec
+
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+
       - name: Build APK
         run: |
           buildozer android debug
@@ -60,5 +61,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Limplik-AI.apk
+          name: Limplik-AI
           path: bin/*.apk
