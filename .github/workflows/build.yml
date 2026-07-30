@@ -12,38 +12,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          distribution: temurin
-          java-version: 17
+          python-version: "3.11"
 
-      - name: Install packages
+      - name: Install dependencies
         run: |
-          sudo apt update
-          sudo apt install -y python3-pip unzip
+          pip install buildozer cython==0.29.37
 
-      - name: Install buildozer
+      - name: Install Android SDK tools
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK packages
         run: |
-          pip install buildozer cython==0.29.36
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Install Android SDK
+      - name: Build APK
         run: |
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
-          "platform-tools" \
-          "platforms;android-35" \
-          "build-tools;35.0.0"
-
-          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
-          echo "$ANDROID_HOME/build-tools/35.0.0" >> $GITHUB_PATH
-
-      - name: Build
-        run: |
+          buildozer init
           buildozer android debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Limplik-AI
+          name: Limplik-AI.apk
           path: bin/*.apk
