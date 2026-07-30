@@ -10,45 +10,42 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Download project
+        uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
-          python-version: "3.11"
+          distribution: temurin
+          java-version: 17
 
-      - name: Install packages
-        run: |
-          pip install --upgrade pip
-          pip install buildozer
-          pip install cython==0.29.37
-
-      - name: Setup Android SDK
+      - name: Setup Android
         uses: android-actions/setup-android@v3
 
-      - name: Install Android components
+      - name: Install Android tools
         run: |
           yes | sdkmanager --licenses
           sdkmanager \
-            "platform-tools" \
-            "platforms;android-35" \
-            "build-tools;35.0.0" \
-            "cmdline-tools;latest"
+          "platform-tools" \
+          "platforms;android-34" \
+          "build-tools;34.0.0"
 
-      - name: Configure buildozer
+      - name: Install Python tools
         run: |
-          buildozer init
-          sed -i 's/# android.api = 27/android.api = 35/' buildozer.spec
-          sed -i 's/# android.minapi = 21/android.minapi = 23/' buildozer.spec
+          python -m pip install --upgrade pip
+          pip install buildozer
+          pip install cython==0.29.36
 
-      - name: Build
+      - name: Check AIDL
         run: |
-          export ANDROID_HOME=$ANDROID_SDK_ROOT
-          export PATH=$PATH:$ANDROID_HOME/build-tools/35.0.0
+          find $ANDROID_HOME -name aidl
+
+      - name: Build APK
+        run: |
           buildozer android debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Limplik-AI
+          name: Limplik-AI-apk
           path: bin/*.apk
